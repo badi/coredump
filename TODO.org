@@ -1,4 +1,4 @@
 
 * Topics
-** TODO Password and authentication management
-** TODO FreeNAS server migration to NixOS
+** Password and authentication management
+** FreeNAS server migration to NixOS
