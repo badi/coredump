@@ -1,5 +1,4 @@
 
 * Topics
-** DONE Virtualbox guest with host webcam
 ** TODO Password and authentication management
 ** TODO FreeNAS server migration to NixOS
