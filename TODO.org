@@ -2,3 +2,4 @@
 * Topics
 ** Password and authentication management
 ** FreeNAS server migration to NixOS
+** Google GMail/Inbox experience
