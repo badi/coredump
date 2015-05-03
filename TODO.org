@@ -3,3 +3,5 @@
 ** Password and authentication management
 ** FreeNAS server migration to NixOS
 ** Google GMail/Inbox experience
+   - [[http://www.computerworld.com/article/2854852/google-inbox-revisited.html][relevant review]]
+   - [[http://www.boomeranggmail.com/][boomerang]]
