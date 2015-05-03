@@ -5,25 +5,36 @@
 * TLDR
 
   - Install Virtualbox
-  - Install Install virtualbox extensions
+    yum/apt-get/etc
+  - Download the VirtualBox extensions
+    #+BEGIN_SRC bash
+    $ wget http://download.virtualbox.org/virtualbox/4.3.26/Oracle_VM_VirtualBox_Extension_Pack-4.3.26-98988.vbox-extpack
+    #+END_SRC
+  - Install Install VirtualBox extensions
+    #+BEGIN_SRC bash
+    $ vboxmanage extpack install Oracle_VM_VirtualBox_Extension_Pack-4.3.26-98988.vbox-extpack
+    #+END_SRC
   - start the VM
   - add the webcam
+    #+BEGIN_SRC 
+    $ vboxmanage controlvm "<NAME>" webcam attach
+    #+END_SRC
 
 * Background
 
   The class I am a co-instructor on is an online course. Several times
   a week we use Adobe Connect to interact with the students
-  directly. Additionally, we use Microsoft's Office Mix to add video
-  and sound to Powerpoint presentations. My workstation is a Linux
-  machine. Unfortunately, Adobe Connect requires a current version of
-  Flash, among other things. Getting flash to work reliably on Linux
-  has proven slightly problematic in the past. Additionally, Office
-  Mix only works on Windows.
+  directly. Additionally, we use Microsoft Office Mix to add video and
+  sound to Powerpoint presentations. My workstation is a Linux machine
+  and Adobe Connect requires a current version of Flash to
+  run. Getting flash to work reliably on Linux has proven slightly
+  problematic in the past. To further complicate things, Office Mix
+  only works on Windows versions of Powerpoint.
 
-  As my workstation is rather beefy, it should support running
-  everything under a Windows VM. Once Virtualbox is installed, a
-  Windows VM initialized and the VBox Guest additions installed, it
-  turns out that webcam on the host is not detected by the guest.
+  As my workstation is rather beefy (8-cores, 32 GB RAM), it should
+  support running everything under a Windows VM. Once VirtualBox is
+  installed, the VM initialized and the Guest additions installed, the
+  webcam on the host is not detected by the guest.
 
 * Solution
 
@@ -31,12 +42,12 @@
   controller. Apparently VirtualBox, starting with 4.0, is [[https://www.virtualbox.org/manual/ch01.html#intro-installing][split]] into
   an open source version component and extensions released as blobs
   with Oracle-related licensing. In order to get certain components
-  working, such as the webcam, I need to install the appropriate
+  working, such as the webcam, one needs to install the appropriate
   extension pack.
 
-  The extension packs are available from the [[https://www.virtualbox.org/wiki/Downloads][VirtualBox Download Page]].
-  Make sure to get the version of the extpack matching the installed
-  virtualbox version.
+  These packs are available from the [[https://www.virtualbox.org/wiki/Downloads][VirtualBox Download Page]]. Make
+  sure to get the version of the extpack matching the installed
+  VirtualBox version.
 
   #+BEGIN_EXAMPLE
   $ wget http://download.virtualbox.org/virtualbox/4.3.26/Oracle_VM_VirtualBox_Extension_Pack-4.3.26-98988.vbox-extpack
