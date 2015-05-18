@@ -1,0 +1,328 @@
+
+* Introduction
+
+  I recently upgraded my phone to a Moto X and was interested in
+  trying out different ROMs such as CyanogenMod, and rooting the
+  device. When shopping for a new phone one of my criteria was: how
+  easy is it to hack on. The Nexus 6 would seem to be the obvious
+  choice, but after handling the demo device at the local store
+  decided that it was too large for me. I finally settled on the Moto
+  X:
+  - primary reason: Motorola seems to be developer-friendly
+  - AMOLED screen
+
+  Note: the term "Moto X" can refer to both the first generation
+  (2013) and second generation (2014) versions of the phone. For
+  succinctness, this document uses the term to refer to the 2014
+  edition.
+
+  This document describes the steps required to do the following:
+
+  - unlock the bootloader
+  - install a custom recovery (twrp)
+  - install CyanogenMod
+  - Revert back to stock images from Motoroloa
+  - Root the device
+
+** Relevant Details:
+
+   | Property | Value                               |
+   |----------+-------------------------------------|
+   | Model    | Moto X (2nd gen) 2014 Pure (XT1095) |
+   | Device   | victara                             |
+   | Carrier  | US/GSM AT&T                         |
+
+
+   Note: I am running on Linux (NixOS specifically). Instructions may
+   be different for other platforms.
+
+
+** Requirements
+
+   The AndroidSDK is needed (the main commands for interacting with
+   the device are =adb= and =fastboot=).
+   On NixOS, do so by:
+
+   #+BEGIN_EXAMPLE
+   $ nix-shell -p androidsdk_4_4
+   #+END_EXAMPLE
+
+
+   Next, make sure the Developer Mode is enabled on the phone:
+   Navigate to =Settings=, then =About Phone=, and tap on the =Build
+   number= seven times.
+
+   Now enable "USB Debugging" in the =Developer Options= menu under
+   =Settings=.
+
+   Note: when connecting the device, an =adb devices= may indicate
+   insufficient permissions to access the phone. Running =sudo adb
+   start-server= should resolve this.
+
+
+* Unlocking the Bootloader
+
+  The instructions for unlocking the bootloader are available on
+  [[https://motorola-global-portal.custhelp.com/app/standalone/bootloader/unlock-your-device-a][Motorola's website]]. Since links may go stale, I summarize here:
+
+  The first step is to get the device ID. This is sent to Motorola in
+  order to request an unlock key. Do so by booting into the bootloader
+  and finding out the ID:
+
+  #+BEGIN_EXAMPLE
+  $ adb reboot bootloader
+  $ sudo fastboot oem get_unlock_data 2>&1 | grep '(bootloader)' | awk '{print $2}' | tr -d '\n' | xclip -in
+  #+END_EXAMPLE
+
+  At this point, the key should be in the copy buffer.
+
+  For reference, the =fastboot oem get_unlock_data= dumps something
+  like the following to =stderr=:
+
+  #+BEGIN_EXAMPLE
+  $ sudo fastboot oem get_unlock_data
+  [sudo] password for badi: 
+  ...
+  (bootloader) 0A40040192024205#4C4D3556313230
+  (bootloader) 30373731363031303332323239#BD00
+  (bootloader) 8A672BA4746C2CE02328A2AC0C39F95
+  (bootloader) 1A3E5#1F53280002000000000000000
+  (bootloader) 0000000
+  OKAY [  0.049s]
+  finished. total time: 0.049s
+  #+END_EXAMPLE
+
+  The output needs to formatted to remove the extraneous
+  information. The ID consists of the values after =(bootloader)=
+  without whitespace:
+
+  #+BEGIN_EXAMPLE
+  0A40040192024205#4C4D355631323030373731363031303332323239#BD008A672BA4746C2CE02328A2AC0C39F951A3E5#1F532800020000000000000000000000
+  #+END_EXAMPLE
+
+  Then submit this string to the Motorola's [[https://motorola-global-portal.custhelp.com/app/standalone/bootloader/unlock-your-device-b][Unlock Device website]] to
+  request an unlock key.  Once you receive and email with the key,
+  Motorola provides instructions [[https://motorola-global-portal.custhelp.com/app/standalone/bootloader/unlock-your-device-c][here]] on how to use it:
+
+  #+BEGIN_EXAMPLE
+  $ sudo fastboot oem unlock $UNLOCK_KEY
+  #+END_EXAMPLE
+
+
+* Install CyanogenMod
+
+** Preliminary Setup
+
+  Instructions on installing CyanogenMod (CM) are available on [[http://wiki.cyanogenmod.org/w/Victara_Info][their
+  wiki]].  I downloaded the [[http://download.cyanogenmod.org/?device%3Dvictara][latest CM image]] (cm-12.1 was only available
+  as nightly, not stable as of this writing).  Next, get the correct
+  GApps for the version of CM and processor archicture. You can find
+  out information on the CPU by running
+
+  #+BEGIN_EXAMPLE
+  $ adb shell cat /proc/cpuinfo
+  Processor       : ARMv7 Processor rev 1 (v7l)
+  processor       : 0
+  BogoMIPS        : 38.40
+
+  processor       : 1
+  BogoMIPS        : 38.40
+
+  processor       : 2
+  BogoMIPS        : 38.40
+
+  processor       : 3
+  BogoMIPS        : 38.40
+
+  Features        : swp half thumb fastmult vfp edsp neon vfpv3 tls vfpv4 idiva idivt 
+  CPU implementer : 0x51
+  CPU architecture: 7
+  CPU variant     : 0x2
+  CPU part        : 0x06f
+  CPU revision    : 1
+
+  Hardware        : Qualcomm MSM8974PRO-AC
+  Revision        : 82bf
+  Serial          : e137e70e0b000000
+  Device          : victara
+  Radio           : 1
+  MSM Hardware    : MSM8974AC ES1.1
+  #+END_EXAMPLE
+
+  In this case, the ARMv7 processor is 32-bit so I downloaded the
+  [[https://github.com/cgapps/vendor_google/releases/download/2015-05-03/gapps-5.1-arm-2015-05-03-16-32-37.zip][gapps-5.1-arm-2015-05-03-16-32-37.zip]] file.
+
+  Next, push the CM and GApps files to the device and boot into recovery:
+
+  #+BEGIN_EXAMPLE
+  $ adb shell mkdir /sdcard/ROMs
+  $ adb shell mkdir /sdcard/ROMs/images
+  $ adb push cm-12.1-20150516-NIGHTLY-victara.zip /sdcard/ROMs/images
+  $ adb push gapps-5.1-arm-2015-05-03-16-32-37.zip /sdcard/ROMs/images
+  #+END_EXAMPLE
+
+** Install Custom Recovery
+
+   Prerequisites:
+   - =adb=
+   - =fastboot=
+   - cyanogenmod files =adb push=-ed to the device
+   - gapps files =adb push=-ed to the device
+   - developer mode
+
+   In order to install CyanogenMod a custom recovery image needs to be
+   flashed to the =recovery= partition on the device. There are two
+   main options: Clockworkmod (cwm) or TeamWin Recovery Partition
+   (twrp). Either should work (though I have only tested with twrp),
+   but I chose twrp for its touch interface.
+
+   The summary of the information is [[https://twrp.me/devices/motorolamotox2014.html][here]]. I downloaded
+   [[https://dl.twrp.me/victara/twrp-2.8.6.0-victara.img.html][twrp-2.8.6.0-victara.img]] from the [[https://dl.twrp.me/victara/][twrp download site]].
+
+   Put the device into bootloader mode =adb reboot bootloader= and
+   flash the partition:
+
+   #+BEGIN_EXAMPLE
+   $ sudo fastboot flash recovery twrp-2.8.6.0-victara.img
+   #+END_EXAMPLE
+
+   I got a warning message indicating a size mismatch but this turns
+   out to not be an error.
+
+   Next, make sure to reboot into recovery, otherwise the Motorola boot
+   process will revert to the stock recovery image. Make sure that the
+   cyanogenmod and gapps files are present on the device (somewhere
+   under =/sdcard= should be fine). There is no command to reboot to
+   recovery via =fastboot=. Instead, use the "Volume Down" button to
+   scroll to =Recovery= and press "Volume Up" select it.
+
+   Once the phone boots into recovery:
+   1. factory reset (including wipe cache)
+   2. install CM
+   3. install GApps
+
+   Then, restart to system.
+
+
+* Revert back to Stock
+
+  After playing with CM for a day I decided that I prefer the stock
+  behavior. The procedure as follows allowed me to restore the phone
+  to the way I got it (though I left the bootloader unlocked):
+
+  1. install the KitKat images
+  2. accept the OTA upgrade to Lollipop 5.1
+
+  Motorola provides the [[https://motorola-global-portal.custhelp.com/app/standalone/bootloader/recovery-images][factory images]] for its developer-editions
+  phones (you need to agree to the warning on the page). As of this
+  writing, unfortunately, the images for Lollipop on this Moto X are
+  not available. Therefore the route was to download the KitKat
+  =KK-4.4.4-KXE21.187-42-41 TMO= image and extract it:
+
+  #+BEGIN_EXAMPLE
+  $ tar xf XT1095_TMO_21.21.42.victara_tmo.tmo.en.US.tgz
+  $ cd TMO_21.21.42.victara_tmo.tmo.en.US
+  #+END_EXAMPLE
+
+  Next, reboot into bootloader mode:
+
+  #+BEGIN_EXAMPLE
+  $ adb reboot bootloader
+  #+END_EXAMPLE
+
+  Next, flash the appropriate partitions (may need to be executed as
+  root):
+
+  #+BEGIN_EXAMPLE
+  $ fastboot flash partition gpt.bin
+  $ fastboot flash motoboot motoboot.img
+  $ fastboot reboot-bootloader
+  $ fastboot flash logo logo.bin
+  $ fastboot flash boot boot.img
+  $ fastboot flash recovery recovery.img
+  $ fastboot flash system system.img
+  $ fastboot flash modem NON-HLOS.bin
+  $ fastboot erase modemst1
+  $ fastboot erase modemst2
+  $ fastboot flash fsg fsg.mbn
+  #+END_EXAMPLE
+
+  *IMPORTANT*: make sure to erase the cache:
+
+  #+BEGIN_EXAMPLE
+  $ fastboot erase cache
+  #+END_EXAMPLE
+
+  If the cache is not wiped the phone may get stuck in a boot-loop. If
+  this happens, you might be able to =adb reboot bootloader= to fix.
+
+  Also, you may want to wipe the user data as well:
+
+  #+BEGIN_EXAMPLE
+  $ fastboot erase userdata
+  #+END_EXAMPLE
+
+  The bootloader can also be relocked:
+
+  #+BEGIN_EXAMPLE
+  $ fastboot oem lock
+  #+END_EXAMPLE
+
+
+  Now reboot, configure the device, and go through the OTA update
+  process to get back to Lollipop.
+
+
+* Rooting the Phone
+
+  *Motivation*
+
+  Rooting the phone has several uses, but in my case I wanted an ad
+  blocker. Fortunately [[https://adblockplus.org/en/android-install][adblock plus is available]]. This is not on the
+  Play Store make sure to allow apk installs in the Security section
+  of the Settings menu. While Adblock Plus can run as user, without
+  root it only works by configuring each wifi connection to run
+  through a proxy on localhost. The [[https://adblockplus.org/en/android-about][project FAQ]] has further
+  information. I tried the user-mode approach but was not satisfied.
+
+
+  *Procedure*
+
+  This was relatively straightforward. The general steps are:
+
+  1. download Chainfire's auto root image
+  2. reboot the phone to bootloader
+  3. boot using Chainfire's image.
+
+  Chainfire develops the [[https://play.google.com/store/apps/details?id%3Deu.chainfire.supersu][SuperSU]] app for managing root requests by
+  applications. As part of this work, steps for rooting various
+  devices are provided. The project provides images which, by booting
+  (not flashing), will automatically root your device.
+
+  In this case, the appropriate files for my Moto X are [[https://download.chainfire.eu/596/CF-Root/CF-Auto-Root/CF-Auto-Root-victara-victaratmo-xt1095.zip][here]]. Download
+  and extract them.
+
+  #+BEGIN_EXAMPLE
+  $ mkdir CF-Auto-Root-victara-victaratmo-xt1095
+  $ cd CF-Auto-Root-victara-victaratmo-xt1095
+  $ unzip ../CF-Auto-Root-victara-victaratmo-xt1095.zip
+  #+END_EXAMPLE
+
+  I did not use any of the scripts provided as they try to unlock the
+  bootloader as well. The only command I needed was:
+
+  #+BEGIN_EXAMPLE
+  $ fastboot boot image/CF-Auto-Root-victara-victaratmo-xt1095.img
+  #+END_EXAMPLE
+
+  This transfered the =.img= to the phone and rebooted a couple
+  times. Installing Adblock Plus was straightforward afterwards.
+
+
+
+* Resources and Acknowledgements
+
+  - [[http://wiki.cyanogenmod.org/w/Main_Page][CyanogenMod project and wiki]]
+  - [[http://forum.xda-developers.com/][XDA Developers forum]]
+  - [[http://www.motorola.com/us/Motorola-Developers/motorola-developers.html][Motorola Developer Resources]]
+  - [[https://www.chainfire.eu/][chainfire]]
