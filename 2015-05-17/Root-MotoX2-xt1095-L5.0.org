@@ -318,7 +318,11 @@
   This transfered the =.img= to the phone and rebooted a couple
   times. Installing Adblock Plus was straightforward afterwards.
 
+*EDIT 2015-06-28*
 
+   It turns out that Adblock Plus was blocking MMS messages from going out or in.
+   After switching to [[https://f-droid.org/repository/browse/?fdid=org.adaway][AdAway]] I haven't had any issues.
+   Note: AdAway is not available on Google's Play Store. Get it on [[https://f-droid.org/][F-Droid]]
 
 * Resources and Acknowledgements
 
