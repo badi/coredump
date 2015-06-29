@@ -294,7 +294,7 @@
   2. reboot the phone to bootloader
   3. boot using Chainfire's image.
 
-  Chainfire develops the [[https://play.google.com/store/apps/details?id%3Deu.chainfire.supersu][SuperSU]] app for managing root requests by
+  Chainfire develops the [[https://play.google.com/store/apps/details?id=eu.chainfire.supersu][SuperSU]] app for managing root requests by
   applications. As part of this work, steps for rooting various
   devices are provided. The project provides images which, by booting
   (not flashing), will automatically root your device.
