@@ -1,0 +1,46 @@
+* [2020-05-21 Thu] Siloed Homebrew and Chefdk                 :homebrew:chef:
+
+Need to install homebrew for chef-solo.  Since =/usr/local=
+(especially =/bin=) is already used and I don't like polluting the
+filesystem, I made a fork of the Homebrew installer that [[https://github.com/badmutex/install/commit/d9deef8a6ed6caeccd0115ee60324f0902a7f5d8][changes the
+prefix]] to =/usr/local/Homebrew=.
+
+Things lost are the nice environment inclusion of =PATH=, =MANPATH=,
+and friends, and a binary cache.
+
+OTOH direct installs will end up in their own prefix and
+can be removed by =rm -r /usr/local/Homebrew= (for the most part).
+
+This approach doesn't have the usual hermeticity I like as cask
+install may install the into arbitrary directories.  For example =brew
+cask install chef/chef/chefdk= installs from the upstream =pkg= which
+targets =/opt/chef= and symlinks into =/usr/local/bin=.
+
+Initial environment setup by sourcing:
+
+#+begin_src sh
+  declare -r HOMEBREW_PREFIX=/usr/local/Homebrew
+
+  export PATH=$HOMEBREW_PREFIX/bin:$PATH
+  export INCLUDE_PATH=$HOMEBREW_PREFIX/include:$INCLUDE_PATH
+  export DYLD_LIBRARY_PATH=$HOMEBREW_PREFIX/lib:$DYLD_LIBRARY_PATH
+#+end_src
+
+
+Chef install/uninstall:
+- install
+
+  #+begin_src sh
+    brew cask install chef/chef/chefdk
+    sudo mkdir /etc/chef/
+    sudo chown -Rv $USER /etc/chef
+    chef-solo --chef-license accept
+  #+end_src
+
+- removal
+
+  #+begin_src sh
+    brew cask uninstall chef/chef/chefdk
+  #+end_src
+
+  This may appear to hang, but it just takes a couple minutes.
