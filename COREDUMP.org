@@ -49,3 +49,51 @@ Chef install/uninstall:
 EDIT [2020-06-02 Tue]: I've since [[https://github.com/NixOS/nixpkgs/pull/88631][patched the nixpkgs chefdk]] to
 include =chef-solo= and have since uninstalled all my brew packages
 (though my homebrew is still there)
+
+
+* [2020-06-02 Tue] macos and ulimits
+
+I've been regularily hit by low maxfile limits on macOS recently.
+To fix it I followed these instructions: https://gist.github.com/tombigel/d503800a282fcadbee14b537735d202c
+
+To summarize:
+
+1. =sudo vim /Library/LaunchDaemons/limit.maxfiles.plist=
+
+   #+begin_src xml
+     <?xml version="1.0" encoding="UTF-8"?>
+     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+             "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+     <plist version="1.0">
+       <dict>
+         <key>Label</key>
+         <string>limit.maxfiles</string>
+         <key>ProgramArguments</key>
+         <array>
+           <string>launchctl</string>
+           <string>limit</string>
+           <string>maxfiles</string>
+           <string>2048</string>
+           <string>unlimited</string>
+         </array>
+         <key>RunAtLoad</key>
+         <true/>
+       </dict>
+     </plist>
+   #+end_src
+
+2. =sudo chown root:wheel /Library/LaunchDaemons/limit.maxfiles.plist=
+
+3. Reboot
+
+   This will not take affect until a reboot happens
+
+4. Verify:
+
+   #+begin_example
+     ❯ launchctl limit maxfiles
+             maxfiles    2048           10240
+
+     ❯ ulimit -n
+     2048
+   #+end_example
