@@ -44,3 +44,8 @@ Chef install/uninstall:
   #+end_src
 
   This may appear to hang, but it just takes a couple minutes.
+
+
+EDIT [2020-06-02 Tue]: I've since [[https://github.com/NixOS/nixpkgs/pull/88631][patched the nixpkgs chefdk]] to
+include =chef-solo= and have since uninstalled all my brew packages
+(though my homebrew is still there)
